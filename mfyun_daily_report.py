@@ -229,17 +229,20 @@ def main():
         
         node_list = get_machine_list(token, yesterday)
         low_usage_nodes = []
+        online_nodes = []
         if node_list:
+            # 只保留在线节点用于显示
+            online_nodes = [n for n in node_list if n["online"] == "在线"]
             # 筛选低利用率节点（在线且低于阈值）
-            low_usage_nodes = [n for n in node_list if n["online"] == "在线" and n["usage_rate"] < threshold]
-            print(f"节点数: {len(node_list)} 低利用率(<{threshold}%): {len(low_usage_nodes)}个")
+            low_usage_nodes = [n for n in online_nodes if n["usage_rate"] < threshold]
+            print(f"节点数: {len(node_list)} 在线: {len(online_nodes)} 低利用率(<{threshold}%): {len(low_usage_nodes)}个")
         
         account_results.append({
             "name": name,
             "username": username,
             "stats": stats,
             "profit": profit,
-            "node_list": node_list or [],
+            "node_list": online_nodes,  # 只传在线节点
             "low_usage_nodes": low_usage_nodes,
             "threshold": threshold
         })
@@ -264,38 +267,34 @@ def main():
             content_lines.append("")
             continue
         
-        # 账号标题
+        # 账号标题 + 节点统计
         content_lines.append(f"━━━━━━━━━━━━━━━━━")
-        content_lines.append(f"📱 {name} ({result['username']})")
-        
-        # 节点统计
         if result.get("stats"):
             s = result["stats"]
-            content_lines.append(f"   节点: {s['total']}台 (在线{s['online']}/离线{s['offline']})")
+            content_lines.append(f"📱 {name} | 节点{s['total']}台(在线{s['online']}/离线{s['offline']})")
+        else:
+            content_lines.append(f"📱 {name} ({result['username']})")
         
-        # 所有点位列表
+        # 在线点位明细（每个点位一行）
         node_list = result.get("node_list", [])
         if node_list:
             content_lines.append("")
-            content_lines.append("   📋 点位明细:")
             for i, n in enumerate(node_list, 1):
-                status_icon = "🟢" if n["online"] == "在线" else "🔴"
-                content_lines.append(f"   {i}. {status_icon} {n['remark']}")
-                content_lines.append(f"      利用率: {n['usage_rate']}% | 收益: ¥{n['profit']}")
+                warn = "⚠️" if n["usage_rate"] < threshold else "  "
+                content_lines.append(f"{i}. {warn}{n['remark']}  利用率{n['usage_rate']}%  收益¥{n['profit']}")
         
         # 账号合计
         if result.get("profit"):
             content_lines.append("")
-            content_lines.append(f"   💰 {name}合计: ¥{result['profit']['total_profit']}")
+            content_lines.append(f"💰 {name}合计: ¥{result['profit']['total_profit']}")
         
-        # 低利用率告警
+        # 低利用率告警（单独列出）
         low_nodes = result.get("low_usage_nodes", [])
         if low_nodes:
             content_lines.append("")
-            content_lines.append(f"   ⚠️ 低利用率告警 (<{threshold}%)")
-            content_lines.append(f"   ─────────────────")
+            content_lines.append(f"⚠️ 低利用率告警 (<{threshold}%)")
             for n in low_nodes:
-                content_lines.append(f"   🔔 {n['remark']}: 利用率{n['usage_rate']}% | 收益¥{n['profit']}")
+                content_lines.append(f"   🔔 {n['remark']}: {n['usage_rate']}% | ¥{n['profit']}")
         
         content_lines.append("")
     
