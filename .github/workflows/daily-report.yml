@@ -2,8 +2,8 @@ name: 梦想云每日收益推送
 
 on:
   schedule:
-    # 每天UTC 1:30 = 北京时间 9:30
-    - cron: '30 0 * * *'
+    # 每天UTC 2:00 = 北京时间 10:00
+    - cron: '0 2 * * *'
   workflow_dispatch:  # 允许手动触发
 
 jobs:
