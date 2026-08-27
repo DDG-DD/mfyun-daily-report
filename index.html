@@ -99,3 +99,4 @@ function renderChart(machines){var ctx=document.getElementById("mainChart").getC
 var bgColors=machines.map(function(m){return (m.usage_rate*100)<threshold?"rgba(239,68,68,0.7)":"rgba(37,99,235,0.7)"});var c9="#999",c8="#888",c2="#2a2a2a",c6="#60a5fa",c22="#22c55e";
 chartInstance=new Chart(ctx,{type:"bar",data:{labels:labels,datasets:[{label:"鏀剁泭楼",data:profits,backgroundColor:bgColors,yAxisID:"y",borderRadius:3},{label:"娴侀噺G",data:traffics,backgroundColor:"rgba(34,197,94,0.5)",yAxisID:"y1",borderRadius:3}]},
 options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:c9,font:{size:10}},position:"bottom"}},
+scales:{x:{ticks:{color:c8,font:{size:9},maxRotation:45,minRotation:0},grid:{display:false}},
