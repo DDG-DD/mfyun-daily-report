@@ -75,3 +75,21 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;b
 </div>
 </div>
 <div class="loading-overlay hidden" id="loadingOverlay"><div class="spinner"></div><div class="loading-text" id="loadingText">加载中...</div></div>
+<script>
+var ACCOUNTS=[
+{username:"15268453887",password:"15268453887",lowThreshold:75},
+{username:"18368510107",password:"china123",lowThreshold:70}
+];
+var API_URL="https://api.mfyun.top/graphql";
+var currentAccount=parseInt(localStorage.getItem("mfyun_account")||"0");
+var currentDate=localStorage.getItem("mfyun_date")||"today";
+var chartInstance=null;
+var tokens={};
+function fmtDate(d){var y=d.getFullYear();var m=String(d.getMonth()+1).padStart(2,"0");var day=String(d.getDate()).padStart(2,"0");return y+"-"+m+"-"+day;}
+function getTargetDate(){if(currentDate==="today"){return fmtDate(new Date());}else{var d=new Date();d.setDate(d.getDate()-1);return fmtDate(d);}}
+function showLoading(text){document.getElementById("loadingOverlay").classList.remove("hidden");document.getElementById("loadingText").textContent=text||"加载中...";}
+function hideLoading(){document.getElementById("loadingOverlay").classList.add("hidden");}
+function showError(msg){document.getElementById("contentArea").innerHTML='<div class="error-msg">'+msg+'</div>';}
+function showEmpty(msg){document.getElementById("nodeList").innerHTML='<div class="empty-msg">'+(msg||"暂无数据")+'</div>';}
+async function login(accountIdx){var acc=ACCOUNTS[accountIdx];if(tokens[accountIdx])return tokens[accountIdx];showLoading("登录中...");var q='mutation{login(username:"'+acc.username+'",password:"'+acc.password+'"){access_token}}';var r=await fetch(API_URL,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({query:q})});var d=await r.json();if(d.errors||!d.data||!d.data.login){throw new Error(d.errors?d.errors[0].message:"登录失败");}tokens[accountIdx]=d.data.login.access_token;return tokens[accountIdx];}
+async function fetchMachines(accountIdx,date){var token=await login(accountIdx);showLoading("获取数据中...");var q='query getMachinePage($page:Int!,$pageSize:Int!,$where:MachineBoolExp,$order_by:[MachineOrderBy!]){result:machines(page:$page,page_size:$pageSize,where:$where,order_by:$order_by){data{host uuid usage_rate online online_desc remark user_bills{profit bill_date total_traffic}}total}}';var vars={page:1,pageSize:100,where:{user_bills:{bill_date:{_eq:date}}},order_by:[{field:"usage_rate",order:"desc"}]};var r=await fetch(API_URL,{method:"POST",headers:{"Content-Type":"application/json","Authorization":"token "+token},body:JSON.stringify({query:q,variables:vars})});var d=await r.json();if(d.errors){throw new Error(d.errors[0].message);}return d.data.result;}
