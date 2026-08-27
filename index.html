@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
-<title>姊︽兂浜戠洃鎺�</title>
+<title>梦想云监控</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
@@ -12,8 +12,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;b
 .navbar{position:sticky;top:0;z-index:100;background:#1a1a1a;border-bottom:1px solid #333;padding:12px 16px;display:flex;justify-content:space-between;align-items:center}
 .navbar h1{font-size:17px;font-weight:600;color:#fff}
 .refresh-btn{background:#2563eb;color:#fff;border:none;padding:6px 14px;border-radius:16px;font-size:13px;cursor:pointer}
-.refresh-btn:active{background:#1d4ed8}
-.refresh-btn.loading{opacity:.6;pointer-events:none}
 .tabs{display:flex;gap:8px;padding:12px 16px}
 .tab{flex:1;text-align:center;padding:8px 0;border-radius:20px;background:#2a2a2a;color:#999;font-size:13px;cursor:pointer;transition:all .2s;border:1px solid transparent}
 .tab.active{background:#1e3a5f;color:#60a5fa;border-color:#2563eb}
@@ -59,54 +57,21 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;b
 <body>
 <div class="app">
 <div class="navbar">
-<h1>姊︽兂浜戠洃鎺�</h1>
-<button class="refresh-btn" id="refreshBtn" onclick="loadData()">鍒锋柊</button>
+<h1>梦想云监控</h1>
+<button class="refresh-btn" id="refreshBtn" onclick="loadData()">刷新</button>
 </div>
 <div class="tabs" id="accountTabs">
-<div class="tab active" data-account="0" onclick="switchAccount(0)">璐﹀彿1<br><span style="font-size:10px">15268453887</span></div>
-<div class="tab" data-account="1" onclick="switchAccount(1)">璐﹀彿2<br><span style="font-size:10px">18368510107</span></div>
+<div class="tab active" data-account="0" onclick="switchAccount(0)">账号1<br><span style="font-size:10px">15268453887</span></div>
+<div class="tab" data-account="1" onclick="switchAccount(1)">账号2<br><span style="font-size:10px">18368510107</span></div>
 </div>
 <div class="date-tabs" id="dateTabs">
-<div class="date-tab active" data-date="today" onclick="switchDate('today')">浠婃棩</div>
-<div class="date-tab" data-date="yesterday" onclick="switchDate('yesterday')">鏄ㄦ棩</div>
+<div class="date-tab active" data-date="today" onclick="switchDate('today')">今日</div>
+<div class="date-tab" data-date="yesterday" onclick="switchDate('yesterday')">昨日</div>
 </div>
 <div id="contentArea">
 <div class="kpi-grid" id="kpiGrid"></div>
-<div class="chart-section" id="chartSection"><div class="chart-box"><div class="chart-title">鑺傜偣鏀剁泭涓庢祦閲�</div><canvas id="mainChart"></canvas></div></div>
+<div class="chart-section" id="chartSection"><div class="chart-box"><div class="chart-title">节点收益与流量</div><canvas id="mainChart"></canvas></div></div>
 <div class="node-list" id="nodeList"></div>
 </div>
 </div>
-<div class="loading-overlay hidden" id="loadingOverlay"><div class="spinner"></div><div class="loading-text" id="loadingText">鍔犺浇涓�...</div></div>
-<script>
-var HASH=String.fromCharCode(35);
-var ACCOUNTS=[{username:"15268453887",password:"15268453887",threshold:75,name:"璐﹀彿1"},{username:"18368510107",password:"china123",threshold:70,name:"璐﹀彿2"}];
-var API_URL="https://api.mfyun.top/graphql";
-var currentAccount=parseInt(localStorage.getItem("mfyun_account")||"0");
-var currentDate=localStorage.getItem("mfyun_date")||"today";
-var chartInstance=null;
-function showLoading(t){document.getElementById("loadingOverlay").classList.remove("hidden");document.getElementById("loadingText").textContent=t||"鍔犺浇涓�...";document.getElementById("refreshBtn").classList.add("loading")}
-function hideLoading(){document.getElementById("loadingOverlay").classList.add("hidden");document.getElementById("refreshBtn").classList.remove("loading")}
-function fmtDate(d){return d.toISOString().slice(0,10)}
-function getDateStr(){var d=new Date();if(currentDate==="yesterday")d.setDate(d.getDate()-1);return fmtDate(d)}
-function switchAccount(i){currentAccount=i;localStorage.setItem("mfyun_account",i);document.querySelectorAll(".tab").forEach(function(t,idx){t.classList.toggle("active",idx===i)});loadData()}
-function switchDate(d){currentDate=d;localStorage.setItem("mfyun_date",d);document.querySelectorAll(".date-tab").forEach(function(t){t.classList.toggle("active",t.dataset.date===d)});loadData()}
-async function login(username,password){var query="mutation login($loginForm:LoginInput!){login(loginInput:$loginForm){access_token refresh_token user_id}}";var resp=await fetch(API_URL,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({query:query,variables:{loginForm:{username:username,password:password}}})});var data=await resp.json();if(data.errors)throw new Error(data.errors[0].message||"鐧诲綍澶辫触");return data.data.login.access_token}
-async function getMachines(token,dateStr){var query="query getMachinePage($page:Int!,$pageSize:Int!,$where:MachineBoolExp,$order_by:[MachineOrderBy!]){result:machines(page:$page,page_size:$pageSize,where:$where,order_by:$order_by){data{host uuid usage_rate online online_desc remark user_bills{profit bill_date total_traffic}}total}}";var resp=await fetch(API_URL,{method:"POST",headers:{"Content-Type":"application/json","Authorization":token},body:JSON.stringify({query:query,variables:{page:1,pageSize:100,where:{user_bills:{bill_date:{_eq:dateStr}}},order_by:[{field:"usage_rate",order:"desc"}]}})});var data=await resp.json();if(data.errors)throw new Error(data.errors[0].message||"鑾峰彇鑺傜偣澶辫触");return data.data.result.data||[]}
-function renderKPI(machines,threshold){var total=machines.length;var online=machines.filter(function(m){return m.online===true||m.online===1}).length;var offline=total-online;var tp=0,tt=0,tu=0;machines.forEach(function(m){var b=m.user_bills||[];if(b.length>0){tp+=b[0].profit||0;tt+=b[0].total_traffic||0}tu+=m.usage_rate||0});var avg=total>0?(tu/total*100):0;var pc=tp>0?"green":(tp<0?"red":"");var uc=avg>=threshold?"green":(avg>=50?"yellow":"red");var hc=String.fromCharCode(35);
-var cards=[{label:"鑺傜偣鐘舵€�",value:total,sub:"<span style=\"color:"+hc+"22c55e\">鈼�"+online+"鍦ㄧ嚎</span> <span style=\"color:"+hc+"6b7280\">鈼�"+offline+"绂荤嚎</span>"},{label:"褰撴棩鏀剁泭",value:"楼"+tp.toFixed(2),sub:getDateStr(),cls:pc},{label:"褰撴棩鎬绘祦閲�",value:(tt/1024).toFixed(2)+"G",sub:machines.length+"涓妭鐐�"},{label:"骞冲潎鍒╃敤鐜�",value:avg.toFixed(1)+"%",sub:"闃堝€�"+threshold+"%",cls:uc}];
-var html="";cards.forEach(function(c){html+="<div class=\"kpi-card\"><div class=\"kpi-label\">"+c.label+"</div><div class=\"kpi-value "+(c.cls||"")+"\">"+c.value+"</div><div class=\"kpi-sub\">"+c.sub+"</div></div>"});document.getElementById("kpiGrid").innerHTML=html}
-function renderChart(machines){var ctx=document.getElementById("mainChart").getContext("2d");if(chartInstance)chartInstance.destroy();var labels=machines.map(function(m,i){return (m.remark||m.host||("鑺傜偣"+(i+1))).slice(0,8)});var profits=machines.map(function(m){var b=m.user_bills||[];return b.length>0?(b[0].profit||0):0});var traffics=machines.map(function(m){var b=m.user_bills||[];return b.length>0?((b[0].total_traffic||0)/1024):0});var threshold=ACCOUNTS[currentAccount].threshold;
-var bgColors=machines.map(function(m){return (m.usage_rate*100)<threshold?"rgba(239,68,68,0.7)":"rgba(37,99,235,0.7)"});var c9="#999",c8="#888",c2="#2a2a2a",c6="#60a5fa",c22="#22c55e";
-chartInstance=new Chart(ctx,{type:"bar",data:{labels:labels,datasets:[{label:"鏀剁泭楼",data:profits,backgroundColor:bgColors,yAxisID:"y",borderRadius:3},{label:"娴侀噺G",data:traffics,backgroundColor:"rgba(34,197,94,0.5)",yAxisID:"y1",borderRadius:3}]},
-options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:c9,font:{size:10}},position:"bottom"}},
-scales:{x:{ticks:{color:c8,font:{size:9},maxRotation:45,minRotation:0},grid:{display:false}},
-y:{type:"linear",position:"left",ticks:{color:c8,font:{size:10}},grid:{color:c2},title:{display:true,text:"鏀剁泭",color:c6,font:{size:10}}},y1:{type:"linear",position:"right",ticks:{color:c8,font:{size:10}},grid:{display:false},title:{display:true,text:"娴侀噺G",color:c22,font:{size:10}}}}}})
-function renderNodeList(machines,threshold){var list=document.getElementById("nodeList");if(machines.length===0){list.innerHTML="<div class=\"empty-msg\">鏆傛棤鏁版嵁<br><span style=\"font-size:11px\">浠婃棩鏁版嵁鍙兘鏈粨绠楋紝璇峰垏鎹㈠埌鏄ㄦ棩鏌ョ湅</span></div>";return}var html="";
-machines.forEach(function(m){var usage=(m.usage_rate||0)*100;var isLow=usage<threshold;var bills=m.user_bills||[];var profit=bills.length>0?(bills[0].profit||0):0;var traffic=bills.length>0?((bills[0].total_traffic||0)/1024):0;var isOnline=m.online===true||m.online===1;var progressClass=usage>=threshold?"high":(usage>=50?"mid":"low");
-html+="<div class=\"node-item"+(isLow?" low-usage":"")+"\"><div class=\"node-header\"><span class=\"node-name\">"+(m.remark||m.host||"鏈煡鑺傜偣")+"</span><span class=\"node-status\"><span class=\"status-dot "+(isOnline?"online":"offline")+"\"></span>"+(isOnline?(m.online_desc||"鍦ㄧ嚎"):"绂荤嚎")+"</span></div>";
-html+="<div class=\"node-stats\"><span>鍒╃敤鐜� <b>"+usage.toFixed(1)+"%</b></span><span>鏀剁泭 <b>楼"+profit.toFixed(2)+"</b></span><span>娴侀噺 <b>"+traffic.toFixed(2)+"G</b></span></div><div class=\"progress-bar\"><div class=\"progress-fill "+progressClass+"\" style=\"width:"+Math.min(usage,100)+"%\"></div></div></div>"});list.innerHTML=html}
-async function loadData(){showLoading("鐧诲綍涓�...");try{var acct=ACCOUNTS[currentAccount];var token=await login(acct.username,acct.password);showLoading("鑾峰彇鏁版嵁涓�...");var dateStr=getDateStr();var machines=await getMachines(token,dateStr);renderKPI(machines,acct.threshold);renderChart(machines);renderNodeList(machines,acct.threshold);hideLoading()}catch(e){hideLoading();document.getElementById("kpiGrid").innerHTML="";document.getElementById("nodeList").innerHTML="<div class=\"error-msg\">鍔犺浇澶辫触锛�"+e.message+"<br><span style=\"font-size:11px;margin-top:8px;display:block\">鐐瑰嚮鍒锋柊閲嶈瘯</span></div>";if(chartInstance){chartInstance.destroy();chartInstance=null}}}
-document.addEventListener("DOMContentLoaded",function(){document.querySelectorAll(".tab").forEach(function(t,idx){t.classList.toggle("active",idx===currentAccount)});document.querySelectorAll(".date-tab").forEach(function(t){t.classList.toggle("active",t.dataset.date===currentDate)});loadData()});
-</script>
-</body>
-</html>
+<div class="loading-overlay hidden" id="loadingOverlay"><div class="spinner"></div><div class="loading-text" id="loadingText">加载中...</div></div>
