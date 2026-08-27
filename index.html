@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
+<title>姊︽兂浜戠洃鎺�</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:#0f0f0f;color:#e0e0e0;min-height:100vh}
+.app{max-width:480px;margin:0 auto;padding-bottom:20px}
+.navbar{position:sticky;top:0;z-index:100;background:#1a1a1a;border-bottom:1px solid #333;padding:12px 16px;display:flex;justify-content:space-between;align-items:center}
+.navbar h1{font-size:17px;font-weight:600;color:#fff}
+.refresh-btn{background:#2563eb;color:#fff;border:none;padding:6px 14px;border-radius:16px;font-size:13px;cursor:pointer}
+.refresh-btn:active{background:#1d4ed8}
+.refresh-btn.loading{opacity:.6;pointer-events:none}
+.tabs{display:flex;gap:8px;padding:12px 16px}
+.tab{flex:1;text-align:center;padding:8px 0;border-radius:20px;background:#2a2a2a;color:#999;font-size:13px;cursor:pointer;transition:all .2s;border:1px solid transparent}
+.tab.active{background:#1e3a5f;color:#60a5fa;border-color:#2563eb}
+.date-tabs{display:flex;gap:8px;padding:0 16px 12px}
+.date-tab{flex:1;text-align:center;padding:6px 0;border-radius:14px;background:#2a2a2a;color:#999;font-size:12px;cursor:pointer;transition:all .2s}
+.date-tab.active{background:#374151;color:#fff}
+.kpi-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:0 16px 12px}
+.kpi-card{background:#1a1a1a;border:1px solid #2a2a2a;border-radius:12px;padding:12px}
+.kpi-label{font-size:11px;color:#888;margin-bottom:6px}
+.kpi-value{font-size:20px;font-weight:700;color:#fff}
+.kpi-sub{font-size:11px;color:#666;margin-top:4px}
+.kpi-value.green{color:#22c55e}
+.kpi-value.red{color:#ef4444}
+.kpi-value.yellow{color:#eab308}
+.chart-section{padding:0 16px 12px}
+.chart-box{background:#1a1a1a;border:1px solid #2a2a2a;border-radius:12px;padding:12px;position:relative;height:220px}
+.chart-title{font-size:12px;color:#888;margin-bottom:8px}
+.node-list{padding:0 16px}
+.node-item{background:#1a1a1a;border:1px solid #2a2a2a;border-radius:10px;padding:10px 12px;margin-bottom:8px}
+.node-item.low-usage{background:#2d1a1a;border-color:#7f1d1d}
+.node-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+.node-name{font-size:13px;font-weight:500;color:#fff;max-width:60%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.node-status{display:flex;align-items:center;gap:5px;font-size:11px;color:#888}
+.status-dot{width:8px;height:8px;border-radius:50%}
+.status-dot.online{background:#22c55e}
+.status-dot.offline{background:#6b7280}
+.node-stats{display:flex;justify-content:space-between;font-size:11px;color:#999;margin-bottom:6px}
+.node-stats span b{color:#e0e0e0;font-weight:500}
+.progress-bar{height:5px;background:#333;border-radius:3px;overflow:hidden}
+.progress-fill{height:100%;border-radius:3px;transition:width .3s}
+.progress-fill.high{background:#22c55e}
+.progress-fill.mid{background:#eab308}
+.progress-fill.low{background:#ef4444}
+.loading-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.7);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:1000}
+.loading-overlay.hidden{display:none}
+.spinner{width:40px;height:40px;border:3px solid #333;border-top-color:#2563eb;border-radius:50%;animation:spin 1s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading-text{margin-top:12px;font-size:14px;color:#999}
+.error-msg{padding:20px 16px;text-align:center;color:#ef4444;font-size:14px}
+.empty-msg{padding:30px 16px;text-align:center;color:#666;font-size:13px}
+</style>
+</head>
+<body>
+<div class="app">
+<div class="navbar">
+<h1>姊︽兂浜戠洃鎺�</h1>
+<button class="refresh-btn" id="refreshBtn" onclick="loadData()">鍒锋柊</button>
+</div>
+<div class="tabs" id="accountTabs">
+<div class="tab active" data-account="0" onclick="switchAccount(0)">璐﹀彿1<br><span style="font-size:10px">15268453887</span></div>
+<div class="tab" data-account="1" onclick="switchAccount(1)">璐﹀彿2<br><span style="font-size:10px">18368510107</span></div>
+</div>
+<div class="date-tabs" id="dateTabs">
+<div class="date-tab active" data-date="today" onclick="switchDate('today')">浠婃棩</div>
+<div class="date-tab" data-date="yesterday" onclick="switchDate('yesterday')">鏄ㄦ棩</div>
+</div>
+<div id="contentArea">
+<div class="kpi-grid" id="kpiGrid"></div>
+<div class="chart-section" id="chartSection"><div class="chart-box"><div class="chart-title">鑺傜偣鏀剁泭涓庢祦閲�</div><canvas id="mainChart"></canvas></div></div>
+<div class="node-list" id="nodeList"></div>
+</div>
+</div>
+<div class="loading-overlay hidden" id="loadingOverlay"><div class="spinner"></div><div class="loading-text" id="loadingText">鍔犺浇涓�...</div></div>
