@@ -77,3 +77,18 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;b
 </div>
 </div>
 <div class="loading-overlay hidden" id="loadingOverlay"><div class="spinner"></div><div class="loading-text" id="loadingText">鍔犺浇涓�...</div></div>
+<script>
+var HASH=String.fromCharCode(35);
+var ACCOUNTS=[{username:"15268453887",password:"15268453887",threshold:75,name:"璐﹀彿1"},{username:"18368510107",password:"china123",threshold:70,name:"璐﹀彿2"}];
+var API_URL="https://api.mfyun.top/graphql";
+var currentAccount=parseInt(localStorage.getItem("mfyun_account")||"0");
+var currentDate=localStorage.getItem("mfyun_date")||"today";
+var chartInstance=null;
+function showLoading(t){document.getElementById("loadingOverlay").classList.remove("hidden");document.getElementById("loadingText").textContent=t||"鍔犺浇涓�...";document.getElementById("refreshBtn").classList.add("loading")}
+function hideLoading(){document.getElementById("loadingOverlay").classList.add("hidden");document.getElementById("refreshBtn").classList.remove("loading")}
+function fmtDate(d){return d.toISOString().slice(0,10)}
+function getDateStr(){var d=new Date();if(currentDate==="yesterday")d.setDate(d.getDate()-1);return fmtDate(d)}
+function switchAccount(i){currentAccount=i;localStorage.setItem("mfyun_account",i);document.querySelectorAll(".tab").forEach(function(t,idx){t.classList.toggle("active",idx===i)});loadData()}
+function switchDate(d){currentDate=d;localStorage.setItem("mfyun_date",d);document.querySelectorAll(".date-tab").forEach(function(t){t.classList.toggle("active",t.dataset.date===d)});loadData()}
+async function login(username,password){var query="mutation login($loginForm:LoginInput!){login(loginInput:$loginForm){access_token refresh_token user_id}}";var resp=await fetch(API_URL,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({query:query,variables:{loginForm:{username:username,password:password}}})});var data=await resp.json();if(data.errors)throw new Error(data.errors[0].message||"鐧诲綍澶辫触");return data.data.login.access_token}
+async function getMachines(token,dateStr){var query="query getMachinePage($page:Int!,$pageSize:Int!,$where:MachineBoolExp,$order_by:[MachineOrderBy!]){result:machines(page:$page,page_size:$pageSize,where:$where,order_by:$order_by){data{host uuid usage_rate online online_desc remark user_bills{profit bill_date total_traffic}}total}}";var resp=await fetch(API_URL,{method:"POST",headers:{"Content-Type":"application/json","Authorization":token},body:JSON.stringify({query:query,variables:{page:1,pageSize:100,where:{user_bills:{bill_date:{_eq:dateStr}}},order_by:[{field:"usage_rate",order:"desc"}]}})});var data=await resp.json();if(data.errors)throw new Error(data.errors[0].message||"鑾峰彇鑺傜偣澶辫触");return data.data.result.data||[]}
