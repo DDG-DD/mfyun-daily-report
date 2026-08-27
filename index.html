@@ -101,3 +101,4 @@ chartInstance=new Chart(ctx,{type:"bar",data:{labels:labels,datasets:[{label:"�
 options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:c9,font:{size:10}},position:"bottom"}},
 scales:{x:{ticks:{color:c8,font:{size:9},maxRotation:45,minRotation:0},grid:{display:false}},
 y:{type:"linear",position:"left",ticks:{color:c8,font:{size:10}},grid:{color:c2},title:{display:true,text:"鏀剁泭",color:c6,font:{size:10}}},y1:{type:"linear",position:"right",ticks:{color:c8,font:{size:10}},grid:{display:false},title:{display:true,text:"娴侀噺G",color:c22,font:{size:10}}}}}})
+function renderNodeList(machines,threshold){var list=document.getElementById("nodeList");if(machines.length===0){list.innerHTML="<div class=\"empty-msg\">鏆傛棤鏁版嵁<br><span style=\"font-size:11px\">浠婃棩鏁版嵁鍙兘鏈粨绠楋紝璇峰垏鎹㈠埌鏄ㄦ棩鏌ョ湅</span></div>";return}var html="";
